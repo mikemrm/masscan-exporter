@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/mikemrm/masscan-exporter/compare/v0.1.0...v0.1.1) (2025-04-19)
+
+
+### Bug Fixes
+
+* add missing libpcap ([9b935a4](https://github.com/mikemrm/masscan-exporter/commit/9b935a4b5309507ed8e6eb758344567ac8cced5f))
+
 ## 0.1.0 (2025-04-19)
 
 
