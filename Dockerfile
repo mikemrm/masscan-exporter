@@ -10,7 +10,9 @@ RUN apt update \
     && git checkout "${MASSCAN_VERSION}" \
     && make
 
-FROM gcr.io/distroless/base-nossl:latest
+FROM debian:12-slim
+
+RUN apt update && apt install -y libpcap0.8 && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /masscan/bin/masscan /usr/bin/
 
