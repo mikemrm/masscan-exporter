@@ -1,0 +1,82 @@
+---
+name: release-please
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      version: ${{ steps.release.outputs.version }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.MRBOTM_GITHUB_TOKEN }}
+
+  release:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    strategy:
+      matrix:
+        release:
+          - tag_name: "${{ needs.release-please.outputs.tag_name }}"
+            version: "v${{ needs.release-please.outputs.version }}"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Build binary
+        run: go build -o masscan-exporter ./main.go
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ matrix.release.version }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+
+      - name: Update release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view ${{ matrix.release.tag_name }} --json body | jq -r '.body' > release_notes.md
+
+          {
+            echo
+            echo
+            echo '## Container Images'
+            echo
+            echo 'This release is available at the following container images:'
+            echo
+            echo "- \`ghcr.io/${{ github.repository }}:${{ matrix.release.version }}\`"
+          } >> release_notes.md
+
+          gh release edit ${{ matrix.release.tag_name }} --notes-file release_notes.md
