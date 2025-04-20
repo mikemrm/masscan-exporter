@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/mikemrm/masscan-exporter/compare/v0.2.0...v0.3.0) (2025-04-20)
+
+
+### Features
+
+* include scrape seconds as a metric ([aa73177](https://github.com/mikemrm/masscan-exporter/commit/aa73177a218911899137667f2ed00e8dc835d10d))
+
 ## [0.2.0](https://github.com/mikemrm/masscan-exporter/compare/v0.1.1...v0.2.0) (2025-04-20)
 
 
