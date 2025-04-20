@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/mikemrm/masscan-exporter/compare/v0.1.1...v0.2.0) (2025-04-20)
+
+
+### Features
+
+* ensure only a single scrape happens at a time ([1de8749](https://github.com/mikemrm/masscan-exporter/commit/1de8749216d2a14c243468d58c27c100f412efc6))
+
 ## [0.1.1](https://github.com/mikemrm/masscan-exporter/compare/v0.1.0...v0.1.1) (2025-04-19)
 
 
