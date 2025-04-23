@@ -2,7 +2,6 @@ package exporter
 
 import (
 	"context"
-	"log"
 	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -15,7 +14,7 @@ func (e *exporter) collect(ch chan<- prometheus.Metric) float64 {
 
 	report, err := e.masscan.Run(ctx)
 	if err != nil {
-		log.Printf("failed to execute masscan: %s", err.Error())
+		e.logger.Err(err).Msg("failed to execute masscan")
 
 		return 0
 	}
@@ -28,7 +27,7 @@ func (e *exporter) collect(ch chan<- prometheus.Metric) float64 {
 				value = 1
 			}
 
-			addMetric(ch, e.descPortsOpen, prometheus.GaugeValue, value,
+			e.addMetric(ch, e.descPortsOpen, prometheus.GaugeValue, value,
 				ip, strconv.Itoa(port.Port), port.Proto, port.Reason,
 			)
 		}
@@ -37,10 +36,10 @@ func (e *exporter) collect(ch chan<- prometheus.Metric) float64 {
 	return 1
 }
 
-func addMetric(ch chan<- prometheus.Metric, desc *prometheus.Desc, valueType prometheus.ValueType, value float64, labelValues ...string) {
+func (e *exporter) addMetric(ch chan<- prometheus.Metric, desc *prometheus.Desc, valueType prometheus.ValueType, value float64, labelValues ...string) {
 	metric, err := prometheus.NewConstMetric(desc, valueType, value, labelValues...)
 	if err != nil {
-		log.Printf("failed creating prometheus metric: %s", err.Error())
+		e.logger.Err(err).Msg("failed creating prometheus metric")
 
 		return
 	}

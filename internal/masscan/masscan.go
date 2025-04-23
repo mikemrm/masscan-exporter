@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/rs/zerolog"
 )
 
 var (
@@ -19,11 +21,12 @@ var (
 )
 
 type Masscan struct {
-	cfg Config
+	logger zerolog.Logger
+	cfg    Config
 }
 
 func (m *Masscan) Run(ctx context.Context) (Report, error) {
-	tmpfile, cleanup, err := tempFile(m.cfg.TempDir)
+	tmpfile, cleanup, err := tempFile(m.cfg.TempDir, "json")
 	if err != nil {
 		return Report{}, err
 	}
@@ -39,6 +42,23 @@ func (m *Masscan) Run(ctx context.Context) (Report, error) {
 		args = append(args, "--max-rate", strconv.Itoa(m.cfg.MaxRate))
 	}
 
+	if m.cfg.ConfigPath != "" {
+		args = append(args, "-c", m.cfg.ConfigPath)
+	} else if m.cfg.Config != "" {
+		conffile, cleanup, err := tempFile(m.cfg.TempDir, "conf")
+		if err != nil {
+			return Report{}, err
+		}
+
+		defer cleanup()
+
+		if err := os.WriteFile(conffile, []byte(m.cfg.Config), 0x644); err != nil {
+			return Report{}, fmt.Errorf("failed to write config: %w", err)
+		}
+
+		args = append(args, "-c", conffile)
+	}
+
 	args = append(args, m.cfg.Ranges...)
 
 	if len(m.cfg.Ports) != 0 {
@@ -46,6 +66,8 @@ func (m *Masscan) Run(ctx context.Context) (Report, error) {
 
 		args = append(args, "-p"+ports)
 	}
+
+	m.logger.Debug().Msgf("prepared command %s %q", m.cfg.BinPath, args)
 
 	var output bytes.Buffer
 
@@ -103,7 +125,7 @@ func (m *Masscan) generateReport(file string) (Report, error) {
 	return report, nil
 }
 
-func tempFile(dir string) (string, func(), error) {
+func tempFile(dir string, ext string) (string, func(), error) {
 	if err := os.MkdirAll(dir, 0x755); err != nil {
 		return "", nil, err
 	}
@@ -118,7 +140,7 @@ func tempFile(dir string) (string, func(), error) {
 			return "", nil, err
 		}
 
-		filename := filepath.Join(dir, fmt.Sprintf("masscan-%02x.json", string(uniq[:])))
+		filename := filepath.Join(dir, fmt.Sprintf("masscan-%02x.%s", string(uniq[:]), ext))
 
 		if _, err = os.Stat(filename); err != nil && errors.Is(err, os.ErrNotExist) {
 			return filename, func() {
@@ -130,7 +152,7 @@ func tempFile(dir string) (string, func(), error) {
 	return "", nil, fmt.Errorf("%w: %w", ErrTempfileExhausted, err)
 }
 
-func New(opts ...Option) (*Masscan, error) {
+func New(ctx context.Context, opts ...Option) (*Masscan, error) {
 	var cfg Config
 
 	for _, opt := range opts {
@@ -140,6 +162,7 @@ func New(opts ...Option) (*Masscan, error) {
 	cfg = cfg.withDefaults()
 
 	return &Masscan{
-		cfg: cfg,
+		logger: *zerolog.Ctx(ctx),
+		cfg:    cfg,
 	}, nil
 }

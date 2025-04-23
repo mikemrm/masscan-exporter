@@ -1,14 +1,18 @@
 package exporter
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/mikemrm/masscan-exporter/internal/masscan"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/zerolog"
 )
 
 type exporter struct {
+	logger zerolog.Logger
+
 	timeout time.Duration
 	masscan *masscan.Masscan
 
@@ -17,25 +21,26 @@ type exporter struct {
 	descPortsOpen     *prometheus.Desc
 }
 
-func (c *exporter) Describe(ch chan<- *prometheus.Desc) {
-	ch <- c.descScrapeSuccess
-	ch <- c.descScrapeSeconds
-	ch <- c.descPortsOpen
+func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
+	ch <- e.descScrapeSuccess
+	ch <- e.descScrapeSeconds
+	ch <- e.descPortsOpen
 }
 
-func (c *exporter) Collect(ch chan<- prometheus.Metric) {
+func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 	start := time.Now()
-	result := c.collect(ch)
+	result := e.collect(ch)
 	duration := time.Since(start)
 
-	addMetric(ch, c.descScrapeSuccess, prometheus.GaugeValue, result)
-	addMetric(ch, c.descScrapeSeconds, prometheus.GaugeValue, float64(duration)/float64(time.Second))
+	e.addMetric(ch, e.descScrapeSuccess, prometheus.GaugeValue, result)
+	e.addMetric(ch, e.descScrapeSeconds, prometheus.GaugeValue, float64(duration)/float64(time.Second))
 }
 
-func New(masscan *masscan.Masscan, opts ...Option) (prometheus.Collector, error) {
+func New(ctx context.Context, masscan *masscan.Masscan, opts ...Option) (prometheus.Collector, error) {
 	cfg := newConfig(opts...)
 
 	exporter := &exporter{
+		logger:  *zerolog.Ctx(ctx),
 		timeout: cfg.Timeout,
 		masscan: masscan,
 

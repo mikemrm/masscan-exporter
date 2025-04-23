@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"context"
-	"log"
 	"os"
+	"reflect"
 	"strings"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/mikemrm/masscan-exporter/internal/exporter"
 	"github.com/mikemrm/masscan-exporter/internal/masscan"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -17,6 +19,7 @@ type ctxConfigKey struct{}
 var configKey = ctxConfigKey{}
 
 type config struct {
+	LogLevel zerolog.Level   `mapstructure:"loglevel"`
 	Masscan  masscan.Config  `mapstructure:"masscan"`
 	Exporter exporter.Config `mapstructure:"exporter"`
 	Server   struct {
@@ -29,6 +32,8 @@ func getConfig(ctx context.Context) config {
 }
 
 func initialize(cmd *cobra.Command, _ []string) {
+	logger := zerolog.New(os.Stderr)
+
 	v := viper.GetViper()
 
 	v.SetEnvPrefix("MASSCAN_EXPORTER")
@@ -43,21 +48,54 @@ func initialize(cmd *cobra.Command, _ []string) {
 
 	if err := v.ReadInConfig(); err != nil {
 		if !os.IsNotExist(err) {
-			log.Fatalf("failed to load config file: %s: %s", v.GetString("config"), err.Error())
+			logger.Fatal().Err(err).Msgf("failed to load config file: %s", v.GetString("config"))
 		}
 	}
 
 	var cfg config
 
-	if err := v.Unmarshal(&cfg); err != nil {
-		log.Fatalf("failed to build config: %s", err.Error())
+	if err := v.Unmarshal(&cfg, decodeUnmarshalText); err != nil {
+		logger.Fatal().Err(err).Msg("failed to build config")
 	}
 
 	ctx := context.WithValue(cmd.Context(), configKey, cfg)
 
+	ctx = logger.Level(cfg.LogLevel).WithContext(ctx)
+
 	cmd.SetContext(ctx)
+}
+
+type textUnmarshaller interface {
+	UnmarshalText(text []byte) error
+}
+
+func decodeUnmarshalText(config *mapstructure.DecoderConfig) {
+	hook := func(from, to reflect.Value) (any, error) {
+		toI, ok := reflect.Indirect(to).Addr().Interface().(textUnmarshaller)
+		if !ok {
+			return from.Interface(), nil
+		}
+
+		switch fromI := from.Interface().(type) {
+		case []byte:
+			toI.UnmarshalText(fromI)
+		case string:
+			toI.UnmarshalText([]byte(fromI))
+		default:
+			return fromI, nil
+		}
+
+		return nil, nil
+	}
+
+	if config.DecodeHook != nil {
+		config.DecodeHook = mapstructure.ComposeDecodeHookFunc(config.DecodeHook, hook)
+	} else {
+		config.DecodeHook = hook
+	}
 }
 
 func init() {
 	RootCmd.PersistentFlags().String("config", "config.yaml", "config file path")
+	RootCmd.PersistentFlags().String("loglevel", "info", "set the log level")
 }

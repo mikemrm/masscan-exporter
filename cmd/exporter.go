@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -10,23 +9,27 @@ import (
 	"github.com/mikemrm/masscan-exporter/internal/masscan"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 )
 
 func runExporter(cmd *cobra.Command, _ []string) {
-	cfg := getConfig(cmd.Context())
+	ctx := cmd.Context()
 
-	masscan, err := masscan.New(masscan.WithConfig(cfg.Masscan))
+	logger := zerolog.Ctx(ctx)
+	cfg := getConfig(ctx)
+
+	masscan, err := masscan.New(ctx, masscan.WithConfig(cfg.Masscan))
 	if err != nil {
-		panic(err)
+		logger.Fatal().Err(err).Send()
 	}
 
 	registry := prometheus.NewRegistry()
 
 	cfg.Exporter.Registerer = registry
 
-	if _, err := exporter.New(masscan, exporter.WithConfig(cfg.Exporter)); err != nil {
-		log.Fatalf("failed to initialize exporter: %s", err.Error())
+	if _, err := exporter.New(ctx, masscan, exporter.WithConfig(cfg.Exporter)); err != nil {
+		logger.Fatal().Err(err).Msg("failed to initialize exporter")
 	}
 
 	mux := http.NewServeMux()
@@ -52,7 +55,7 @@ func runExporter(cmd *cobra.Command, _ []string) {
 
 	mux.Handle("/metrics", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if isInFlight() {
-			log.Println("request already in flight")
+			logger.Warn().Msg("request already in flight")
 
 			w.WriteHeader(http.StatusTooManyRequests)
 
@@ -64,17 +67,17 @@ func runExporter(cmd *cobra.Command, _ []string) {
 
 		s := time.Now()
 
-		log.Println("starting request")
+		logger.Info().Msg("starting request")
 
 		promhttp.HandlerFor(registry, promhttp.HandlerOpts{}).ServeHTTP(w, r)
 
-		log.Printf("request completed in %s", time.Since(s))
+		logger.Info().Msgf("request completed in %s", time.Since(s))
 	}))
 
-	log.Printf("Listening on %s", cfg.Server.Listen)
+	logger.Info().Msgf("Listening on %s", cfg.Server.Listen)
 
 	if err := http.ListenAndServe(cfg.Server.Listen, mux); err != nil {
-		log.Fatalf("error from listen and serve: %s", err.Error())
+		logger.Fatal().Err(err).Msg("error starting server")
 	}
 }
 

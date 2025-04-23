@@ -4,10 +4,12 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/zerolog"
 	"github.com/spf13/pflag"
 )
 
 type Config struct {
+	logger     *zerolog.Logger
 	Timeout    time.Duration         `mapstructure:"timeout"`
 	Registerer prometheus.Registerer `mapstructure:"-"`
 	Labels     prometheus.Labels     `mapstructure:"labels"`
@@ -18,6 +20,12 @@ func newConfig(opts ...Option) Config {
 
 	for _, opt := range opts {
 		cfg = opt.apply(cfg)
+	}
+
+	if cfg.logger == nil {
+		l := zerolog.Nop()
+
+		cfg.logger = &l
 	}
 
 	if cfg.Timeout <= 0 {
@@ -44,6 +52,15 @@ func (fn optionFunc) apply(cfg Config) Config {
 // WithConfig replaces the existing Config.
 func WithConfig(cfg Config) Option {
 	return optionFunc(func(_ Config) Config {
+		return cfg
+	})
+}
+
+// WithLogger configures the exporter logger.
+func WithLogger(logger zerolog.Logger) Option {
+	return optionFunc(func(cfg Config) Config {
+		cfg.logger = &logger
+
 		return cfg
 	})
 }

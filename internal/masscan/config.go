@@ -1,8 +1,11 @@
 package masscan
 
 import (
+	"reflect"
+	"strings"
 	"time"
 
+	"github.com/rs/zerolog"
 	"github.com/spf13/pflag"
 )
 
@@ -13,6 +16,7 @@ const (
 )
 
 type Config struct {
+	logger    *zerolog.Logger
 	TempDir   string        `mapstructure:"temp_dir"`
 	BinPath   string        `mapstructure:"bin_path"`
 	WaitDelay time.Duration `mapstructure:"wait_delay"`
@@ -20,9 +24,18 @@ type Config struct {
 
 	Ranges []string `mapstructure:"ranges"`
 	Ports  []string `mapstructure:"ports"`
+
+	Config     MasscanConfig `mapstructure:"config"`
+	ConfigPath string        `mapstructure:"config_path"`
 }
 
 func (c Config) withDefaults() Config {
+	if c.logger == nil {
+		l := zerolog.Nop()
+
+		c.logger = &l
+	}
+
 	if c.TempDir == "" {
 		c.TempDir = DefaultTempDir
 	}
@@ -38,10 +51,30 @@ func (c Config) withDefaults() Config {
 	return c
 }
 
+type MasscanConfig string
+
+func (c *MasscanConfig) Decode(from reflect.Value) (any, error) {
+	if from.Kind() != reflect.String {
+		return from.Interface(), nil
+	}
+
+	*c = MasscanConfig(strings.TrimSpace(from.Interface().(string)))
+
+	return nil, nil
+}
+
 type Option func(c Config) Config
 
 func WithConfig(c Config) Option {
 	return func(_ Config) Config {
+		return c
+	}
+}
+
+func WithLogger(logger zerolog.Logger) Option {
+	return func(c Config) Config {
+		c.logger = &logger
+
 		return c
 	}
 }
@@ -70,4 +103,7 @@ func AddFlags(flags *pflag.FlagSet) {
 
 	flags.StringSlice("masscan.ranges", nil, "set the ip ranges to scan")
 	flags.StringSlice("masscan.ports", nil, "configures the ports to scan")
+
+	flags.String("masscan.config_path", "", "provide a masscan config file")
+	flags.String("masscan.config", "", "provide a masscan config")
 }
