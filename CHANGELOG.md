@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0](https://github.com/mikemrm/masscan-exporter/compare/v0.3.0...v0.4.0) (2025-04-25)
+
+
+### Features
+
+* add caching ([71bbfc2](https://github.com/mikemrm/masscan-exporter/commit/71bbfc2b91a12ddd486dd5fcaaa2707ce71ed9b2))
+* support providing a masscan config or config path ([99b3c96](https://github.com/mikemrm/masscan-exporter/commit/99b3c96afd092d678278d307853d868d82b9727c))
+
+
+### Bug Fixes
+
+* remove old main ([859f969](https://github.com/mikemrm/masscan-exporter/commit/859f9698bad003b3b3c5e42d015a2f38d2075a54))
+
 ## [0.3.0](https://github.com/mikemrm/masscan-exporter/compare/v0.2.0...v0.3.0) (2025-04-20)
 
 
