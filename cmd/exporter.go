@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/mikemrm/masscan-exporter/internal/exporter"
@@ -34,37 +33,7 @@ func runExporter(cmd *cobra.Command, _ []string) {
 
 	mux := http.NewServeMux()
 
-	var (
-		inFlightMu sync.RWMutex
-		inFlight   bool
-	)
-
-	isInFlight := func() bool {
-		inFlightMu.RLock()
-		defer inFlightMu.RUnlock()
-
-		return inFlight
-	}
-
-	setInFlight := func(v bool) {
-		inFlightMu.Lock()
-		defer inFlightMu.Unlock()
-
-		inFlight = v
-	}
-
 	mux.Handle("/metrics", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if isInFlight() {
-			logger.Warn().Msg("request already in flight")
-
-			w.WriteHeader(http.StatusTooManyRequests)
-
-			return
-		}
-
-		setInFlight(true)
-		defer setInFlight(false)
-
 		s := time.Now()
 
 		logger.Info().Msg("starting request")

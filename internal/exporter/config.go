@@ -13,6 +13,7 @@ type Config struct {
 	Timeout    time.Duration         `mapstructure:"timeout"`
 	Registerer prometheus.Registerer `mapstructure:"-"`
 	Labels     prometheus.Labels     `mapstructure:"labels"`
+	CacheTTL   time.Duration         `mapstructure:"cache_ttl"`
 }
 
 func newConfig(opts ...Option) Config {
@@ -34,6 +35,10 @@ func newConfig(opts ...Option) Config {
 
 	if cfg.Registerer == nil {
 		cfg.Registerer = prometheus.DefaultRegisterer
+	}
+
+	if cfg.CacheTTL <= 0 {
+		cfg.CacheTTL = time.Minute
 	}
 
 	return cfg

@@ -3,11 +3,20 @@ package exporter
 import (
 	"context"
 	"strconv"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-func (e *exporter) collect(ch chan<- prometheus.Metric) float64 {
+func (e *exporter) collectMetrics(ch chan<- prometheus.Metric) float64 {
+	e.logger.Info().Msg("collection started")
+
+	start := time.Now()
+
+	defer func() {
+		e.logger.Info().Msgf("finished collecting in %s", time.Since(start))
+	}()
+
 	ctx, cancel := context.WithTimeout(context.Background(), e.timeout)
 
 	defer cancel()
