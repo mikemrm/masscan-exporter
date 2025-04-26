@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.1](https://github.com/mikemrm/masscan-exporter/compare/v0.5.0...v0.5.1) (2025-04-26)
+
+
+### Bug Fixes
+
+* add docs referencing the grafana dashboard id to import ([bfa97b2](https://github.com/mikemrm/masscan-exporter/commit/bfa97b2722c2db8f768c6e22794d3faf98f2c099))
+* add license ([62046a3](https://github.com/mikemrm/masscan-exporter/commit/62046a3575b335ecf7ac3a6f678e586b36b6081b))
+* cleanup some unused code, add grafana dashboard ([2eb1533](https://github.com/mikemrm/masscan-exporter/commit/2eb15333fdb5f9b8264caf6e5e982e5dc1d220b1))
+
 ## [0.5.0](https://github.com/mikemrm/masscan-exporter/compare/v0.4.0...v0.5.0) (2025-04-26)
 
 
