@@ -8,6 +8,8 @@ This is due to the time it can take for scans to complete.
 Scan times are configured with a cron style expression supporting 5, 6 and 7 segment formats.
 See [here](https://github.com/adhocore/gronx/blob/main/README.md#cron-expression) for more details.
 
+Import the grafana dashboard with id `23344`.
+
 ```
 $ curl localhost:9187/metrics
 # HELP masscan_ports_open Masscan port status report
