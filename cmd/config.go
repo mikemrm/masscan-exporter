@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/go-viper/mapstructure/v2"
+	"github.com/mikemrm/masscan-exporter/internal/collector"
 	"github.com/mikemrm/masscan-exporter/internal/exporter"
-	"github.com/mikemrm/masscan-exporter/internal/masscan"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -19,10 +19,10 @@ type ctxConfigKey struct{}
 var configKey = ctxConfigKey{}
 
 type config struct {
-	LogLevel zerolog.Level   `mapstructure:"loglevel"`
-	Masscan  masscan.Config  `mapstructure:"masscan"`
-	Exporter exporter.Config `mapstructure:"exporter"`
-	Server   struct {
+	LogLevel   zerolog.Level      `mapstructure:"loglevel"`
+	Collectors []collector.Config `mapstructure:"collectors"`
+	Exporter   exporter.Config    `mapstructure:"exporter"`
+	Server     struct {
 		Listen string `mapstructure:"listen"`
 	} `mapstructure:"server"`
 }

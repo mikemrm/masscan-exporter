@@ -153,13 +153,7 @@ func tempFile(dir string, ext string) (string, func(), error) {
 }
 
 func New(ctx context.Context, opts ...Option) (*Masscan, error) {
-	var cfg Config
-
-	for _, opt := range opts {
-		cfg = opt(cfg)
-	}
-
-	cfg = cfg.withDefaults()
+	cfg := newConfig(opts...)
 
 	return &Masscan{
 		logger: *zerolog.Ctx(ctx),

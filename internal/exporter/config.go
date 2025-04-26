@@ -1,19 +1,13 @@
 package exporter
 
 import (
-	"time"
-
+	"github.com/mikemrm/masscan-exporter/internal/collector"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rs/zerolog"
-	"github.com/spf13/pflag"
 )
 
 type Config struct {
-	logger     *zerolog.Logger
-	Timeout    time.Duration         `mapstructure:"timeout"`
-	Registerer prometheus.Registerer `mapstructure:"-"`
-	Labels     prometheus.Labels     `mapstructure:"labels"`
-	CacheTTL   time.Duration         `mapstructure:"cache_ttl"`
+	Registerer prometheus.Registerer  `mapstructure:"-"`
+	Collectors []*collector.Collector `mapstructure:"-"`
 }
 
 func newConfig(opts ...Option) Config {
@@ -23,22 +17,8 @@ func newConfig(opts ...Option) Config {
 		cfg = opt.apply(cfg)
 	}
 
-	if cfg.logger == nil {
-		l := zerolog.Nop()
-
-		cfg.logger = &l
-	}
-
-	if cfg.Timeout <= 0 {
-		cfg.Timeout = 10 * time.Minute
-	}
-
 	if cfg.Registerer == nil {
 		cfg.Registerer = prometheus.DefaultRegisterer
-	}
-
-	if cfg.CacheTTL <= 0 {
-		cfg.CacheTTL = time.Minute
 	}
 
 	return cfg
@@ -61,15 +41,6 @@ func WithConfig(cfg Config) Option {
 	})
 }
 
-// WithLogger configures the exporter logger.
-func WithLogger(logger zerolog.Logger) Option {
-	return optionFunc(func(cfg Config) Config {
-		cfg.logger = &logger
-
-		return cfg
-	})
-}
-
 // WithRegisterer configures the prometheus registerer.
 func WithRegisterer(reg prometheus.Registerer) Option {
 	return optionFunc(func(cfg Config) Config {
@@ -77,26 +48,4 @@ func WithRegisterer(reg prometheus.Registerer) Option {
 
 		return cfg
 	})
-}
-
-// WithTimeout configures the timeout running masscan.
-func WithTimeout(timeout time.Duration) Option {
-	return optionFunc(func(cfg Config) Config {
-		cfg.Timeout = timeout
-
-		return cfg
-	})
-}
-
-// WithLabels configures constant labels.
-func WithLabels(labels prometheus.Labels) Option {
-	return optionFunc(func(cfg Config) Config {
-		cfg.Labels = labels
-
-		return cfg
-	})
-}
-func AddFlags(flags *pflag.FlagSet) {
-	flags.Duration("exporter.timeout", 10*time.Minute, "sets the timeout for the scan to complete")
-	flags.StringToString("exporter.labels", nil, "configure constant prometheus labels")
 }

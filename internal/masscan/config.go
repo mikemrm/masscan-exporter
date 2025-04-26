@@ -4,9 +4,6 @@ import (
 	"reflect"
 	"strings"
 	"time"
-
-	"github.com/rs/zerolog"
-	"github.com/spf13/pflag"
 )
 
 const (
@@ -16,7 +13,6 @@ const (
 )
 
 type Config struct {
-	logger    *zerolog.Logger
 	TempDir   string        `mapstructure:"temp_dir"`
 	BinPath   string        `mapstructure:"bin_path"`
 	WaitDelay time.Duration `mapstructure:"wait_delay"`
@@ -29,26 +25,26 @@ type Config struct {
 	ConfigPath string        `mapstructure:"config_path"`
 }
 
-func (c Config) withDefaults() Config {
-	if c.logger == nil {
-		l := zerolog.Nop()
+func newConfig(opts ...Option) Config {
+	var cfg Config
 
-		c.logger = &l
+	for _, opt := range opts {
+		cfg = opt.apply(cfg)
 	}
 
-	if c.TempDir == "" {
-		c.TempDir = DefaultTempDir
+	if cfg.TempDir == "" {
+		cfg.TempDir = DefaultTempDir
 	}
 
-	if c.BinPath == "" {
-		c.BinPath = DefaultBinPath
+	if cfg.BinPath == "" {
+		cfg.BinPath = DefaultBinPath
 	}
 
-	if c.WaitDelay <= 0 {
-		c.WaitDelay = DefaultWaitDelay
+	if cfg.WaitDelay <= 0 {
+		cfg.WaitDelay = DefaultWaitDelay
 	}
 
-	return c
+	return cfg
 }
 
 type MasscanConfig string
@@ -63,47 +59,35 @@ func (c *MasscanConfig) Decode(from reflect.Value) (any, error) {
 	return nil, nil
 }
 
-type Option func(c Config) Config
-
-func WithConfig(c Config) Option {
-	return func(_ Config) Config {
-		return c
-	}
+type Option interface {
+	apply(Config) Config
 }
 
-func WithLogger(logger zerolog.Logger) Option {
-	return func(c Config) Config {
-		c.logger = &logger
+type optionFunc func(Config) Config
 
-		return c
-	}
+func (fn optionFunc) apply(cfg Config) Config {
+	return fn(cfg)
+}
+
+// WithConfig replaces the existing Config.
+func WithConfig(cfg Config) Option {
+	return optionFunc(func(_ Config) Config {
+		return cfg
+	})
 }
 
 func WithRanges(ranges ...string) Option {
-	return func(c Config) Config {
-		c.Ranges = append(c.Ranges, ranges...)
+	return optionFunc(func(cfg Config) Config {
+		cfg.Ranges = append(cfg.Ranges, ranges...)
 
-		return c
-	}
+		return cfg
+	})
 }
 
 func WithPorts(ports ...string) Option {
-	return func(c Config) Config {
-		c.Ports = append(c.Ports, ports...)
+	return optionFunc(func(cfg Config) Config {
+		cfg.Ports = append(cfg.Ports, ports...)
 
-		return c
-	}
-}
-
-func AddFlags(flags *pflag.FlagSet) {
-	flags.String("masscan.temp_dir", "/tmp", "configures the temporary directory used by masscan")
-	flags.String("masscan.bin_path", "/usr/bin/masscan", "sets the masscan binary path")
-	flags.Duration("masscan.wait_delay", 20*time.Second, "sets the delay to wait for the command to exit")
-	flags.Int("masscan.max_rate", 0, "sets the max rate to run the scan")
-
-	flags.StringSlice("masscan.ranges", nil, "set the ip ranges to scan")
-	flags.StringSlice("masscan.ports", nil, "configures the ports to scan")
-
-	flags.String("masscan.config_path", "", "provide a masscan config file")
-	flags.String("masscan.config", "", "provide a masscan config")
+		return cfg
+	})
 }
