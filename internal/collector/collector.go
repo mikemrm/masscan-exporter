@@ -87,23 +87,6 @@ func (c *Collector) run() error {
 	return nil
 }
 
-func (c *Collector) getNextTick() (time.Time, error) {
-	for {
-		nextTick, err := gronx.NextTick(c.schedule, false)
-		if err == nil {
-			return nextTick, nil
-		}
-
-		c.logger.Err(err).Msg("error calculating next tick")
-
-		select {
-		case <-time.After(time.Minute):
-		case <-c.doneCh:
-			return time.Time{}, err
-		}
-	}
-}
-
 func (c *Collector) Stop() {
 	close(c.doneCh)
 }

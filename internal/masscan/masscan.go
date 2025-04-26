@@ -155,8 +155,10 @@ func tempFile(dir string, ext string) (string, func(), error) {
 func New(ctx context.Context, opts ...Option) (*Masscan, error) {
 	cfg := newConfig(opts...)
 
+	logger := zerolog.Ctx(ctx).With().Str("component", "masscan").Logger()
+
 	return &Masscan{
-		logger: *zerolog.Ctx(ctx),
+		logger: logger,
 		cfg:    cfg,
 	}, nil
 }
