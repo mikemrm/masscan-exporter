@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/mikemrm/masscan-exporter/compare/v0.4.0...v0.5.0) (2025-04-26)
+
+
+### Features
+
+* changes to supporting multiple collectors ([935f935](https://github.com/mikemrm/masscan-exporter/commit/935f935c867a1b7935423410d3569c16cbf8e5ae))
+
 ## [0.4.0](https://github.com/mikemrm/masscan-exporter/compare/v0.3.0...v0.4.0) (2025-04-25)
 
 
