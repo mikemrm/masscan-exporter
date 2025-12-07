@@ -7,14 +7,12 @@
         ".": {
             "extra-files": [
                 {
-                    "type": "yaml",
-                    "path": "charts/masscan-exporter/Chart.yaml",
-                    "jsonpath": "$.version"
+                    "type": "generic",
+                    "path": "charts/masscan-exporter/Chart.yaml"
                 },
                 {
-                    "type": "yaml",
-                    "path": "charts/masscan-exporter/Chart.yaml",
-                    "jsonpath": "$.appVersion"
+                    "type": "generic",
+                    "path": "charts/masscan-exporter/Chart.yaml"
                 }
             ]
         }
