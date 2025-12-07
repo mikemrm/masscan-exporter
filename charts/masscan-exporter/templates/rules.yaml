@@ -1,0 +1,60 @@
+{{- if .Values.prometheusRules.enabled }}
+{{- if .Values.prometheusRules.rules.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "common.names.fullname" $ }}
+spec:
+  groups:
+    - name: masscan.rules
+      rules:
+        {{- range $alert, $_ := (omit .Values.prometheusRules.rules "enabled") }}
+        {{- if .enabled }}
+        - alert: {{ quote $alert }}
+          {{- tpl (toYaml (omit . "enabled")) $ | nindent 10 }}
+        {{- end }}
+        {{- end }}
+{{- end }}
+{{- if .Values.prometheusRules.portRules.enabled }}
+  {{- $rules := list }}
+  {{- range $collector, $_ := .Values.prometheusRules.collectorRules }}
+    {{- $permit := include "port-protocols" .permit | fromYaml }}
+    {{- $deny := include "port-protocols" .deny | fromYaml }}
+
+    {{- $ctx := dict
+          "context" $
+          "collector" $collector
+          "permit" $permit
+          "deny" $deny
+    }}
+
+    {{- if $permit.tcp }}
+      {{- $rules = append $rules (tpl (toYaml $.Values.prometheusRules.portRules.permitTCP) $ctx | fromYaml) }}
+    {{- end }}
+
+    {{- if $permit.udp }}
+      {{- $rules = append $rules (tpl (toYaml $.Values.prometheusRules.portRules.permitUDP) $ctx | fromYaml) }}
+    {{- end }}
+
+    {{- if $deny.tcp }}
+      {{- $rules = append $rules (tpl (toYaml $.Values.prometheusRules.portRules.denyTCP) $ctx | fromYaml) }}
+    {{- end }}
+
+    {{- if $deny.udp }}
+      {{- $rules = append $rules (tpl (toYaml $.Values.prometheusRules.portRules.denyUDP) $ctx | fromYaml) }}
+    {{- end }}
+  {{- end }}
+{{- if $rules }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "common.names.fullname" $ }}-collector-ports
+spec:
+  groups:
+    - name: masscan.rules
+      rules: {{- toYaml $rules | nindent 8 }}
+{{- end }}
+{{- end }}
+{{- end }}

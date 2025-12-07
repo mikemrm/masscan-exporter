@@ -38,12 +38,21 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.10.0
+
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to helm registries
+        run: |
+          echo '${{ secrets.GITHUB_TOKEN }}' | helm registry login ghcr.io --username '${{ github.actor }}' --password-stdin
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -63,20 +72,36 @@ jobs:
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
+      - run: |
+          # $owner/charts/$repo
+          cat <<EOF >> $GITHUB_ENV
+          PACKAGE_REPO="$GITHUB_REPOSITORY_OWNER/charts/${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/}"
+          EOF
+
+      - name: Package and publish chart
+        run: |
+          helm package charts/masscan-exporter
+
+          helm push masscan-exporter-*.tgz "oci://ghcr.io/$PACKAGE_REPO"
+
       - name: Update release notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release view ${{ matrix.release.tag_name }} --json body | jq -r '.body' > release_notes.md
 
-          {
-            echo
-            echo
-            echo '## Container Images'
-            echo
-            echo 'This release is available at the following container images:'
-            echo
-            echo "- \`ghcr.io/${{ github.repository }}:${{ matrix.release.version }}\`"
-          } >> release_notes.md
+          cat <<EOF >> release_notes.md
+          ## Container Images
+
+          - \`ghcr.io/${{ github.repository }}:${{ matrix.release.version }}\`
+
+          ## Helm Charts
+
+          - \`oci://ghcr.io/$PACKAGE_REPO:${{ matrix.release.version }}\`
+
+          \`\`\`shell
+          $ helm show all oci://ghcr.io/$PACKAGE_REPO:${{ matrix.release.version }}
+          \`\`\`
+          EOF
 
           gh release edit ${{ matrix.release.tag_name }} --notes-file release_notes.md

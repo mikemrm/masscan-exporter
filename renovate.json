@@ -2,11 +2,13 @@
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": [
         "config:recommended",
-        ":semanticCommits"
+        ":semanticCommits",
+        "customManagers:helmChartYamlAppVersions"
     ],
     "postUpdateOptions": [
         "gomodTidy",
-        "gomodUpdateImportPaths"
+        "gomodUpdateImportPaths",
+        "helmUpdateSubChartArchives"
     ],
     "customManagers": [
         {

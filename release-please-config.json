@@ -3,6 +3,19 @@
     "release-type": "go",
     "signoff": "MrBotM <bot+github@mrm.land>",
     "packages": {
-        ".": {}
+        ".": {
+            "extra-files": [
+                {
+                    "type": "yaml",
+                    "path": "charts/masscan-exporter/Chart.yaml",
+                    "jsonpath": "$.json.version"
+                },
+                {
+                    "type": "yaml",
+                    "path": "charts/masscan-exporter/Chart.yaml",
+                    "jsonpath": "$.json.appVersion"
+                }
+            ]
+        }
     }
 }

@@ -104,7 +104,7 @@ collectors:
 #     config_path: ""             # path to an existing masscan config (overrides config option)
 #     config: ""                  # provide a masscan config as a string
 server:
-  listen: :9090 # default: :9090
+  listen: :9187 # default: :9187
   # The number of times a collector can fail before /readyz will report unhealthy.
   # default is 5, set to 0 to disable.
   unhealthy_failed_scrapes: 5

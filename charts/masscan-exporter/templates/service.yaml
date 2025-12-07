@@ -1,0 +1,17 @@
+{{- if .Values.service.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.names.fullname" $ | quote }}
+  labels: {{- include "common.labels.standard" $ | nindent 8 }}
+spec:
+  selector: {{- include "common.labels.matchLabels" $ | nindent 4 }}
+  ports:
+    {{- range $name, $_ := .Values.service.ports }}
+    - name: {{ quote $name }}
+      port: {{ .port }}
+      targetPort: {{ quote $name }}
+      protocol: {{ .protocol | default "TCP" | quote }}
+    {{- end }}
+{{- end }}
