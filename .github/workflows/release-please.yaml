@@ -76,14 +76,15 @@ jobs:
       - run: |
           # $owner/charts/$repo
           cat <<EOF | tee -a $GITHUB_ENV
-          PACKAGE_REPO="$GITHUB_REPOSITORY_OWNER/charts/${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/}"
+          CHART_REPO="$GITHUB_REPOSITORY_OWNER/charts"
+          CHART_PATH="$GITHUB_REPOSITORY_OWNER/charts/${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/}"
           EOF
 
       - name: Package and publish chart
         run: |
           helm package charts/masscan-exporter
 
-          helm push masscan-exporter-*.tgz "oci://ghcr.io/$PACKAGE_REPO"
+          helm push masscan-exporter-*.tgz "oci://ghcr.io/$CHART_REPO"
 
       - name: Update release notes
         env:
@@ -98,10 +99,10 @@ jobs:
 
           ## Helm Charts
 
-          - \`oci://ghcr.io/$PACKAGE_REPO:${{ matrix.release.version }}\`
+          - \`oci://ghcr.io/$CHART_PATH:${{ matrix.release.version }}\`
 
           \`\`\`shell
-          $ helm show all oci://ghcr.io/$PACKAGE_REPO:${{ matrix.release.version }}
+          $ helm show all oci://ghcr.io/$CHART_PATH:${{ matrix.release.version }}
           \`\`\`
           EOF
 
