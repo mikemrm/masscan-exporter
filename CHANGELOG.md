@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/mikemrm/masscan-exporter/compare/v0.6.0...v0.6.1) (2025-12-07)
+
+
+### Miscellaneous Chores
+
+* re-release v0.6.0 ([eaae551](https://github.com/mikemrm/masscan-exporter/commit/eaae551aea36d224479fe8cd615a1fcca5652a84))
+
 ## [0.6.0](https://github.com/mikemrm/masscan-exporter/compare/v0.5.1...v0.6.0) (2025-12-07)
 
 
