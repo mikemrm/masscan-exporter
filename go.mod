@@ -3,7 +3,7 @@ module github.com/mikemrm/masscan-exporter
 go 1.24.2
 
 require (
-	github.com/adhocore/gronx v1.19.5
+	github.com/adhocore/gronx v1.19.6
 	github.com/go-viper/mapstructure/v2 v2.4.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/rs/zerolog v1.34.0
