@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.3](https://github.com/mikemrm/masscan-exporter/compare/v0.6.2...v0.6.3) (2025-12-07)
+
+
+### Bug Fixes
+
+* **release:** correct environment variables ([8776030](https://github.com/mikemrm/masscan-exporter/commit/8776030bd7acd9809f164dd738dca12c56e59ba5))
+
 ## [0.6.2](https://github.com/mikemrm/masscan-exporter/compare/v0.6.1...v0.6.2) (2025-12-07)
 
 
