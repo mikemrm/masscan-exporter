@@ -30,7 +30,8 @@ jobs:
       matrix:
         release:
           - tag_name: "${{ needs.release-please.outputs.tag_name }}"
-            version: "v${{ needs.release-please.outputs.version }}"
+            version: "${{ needs.release-please.outputs.version }}"
+            prefixed_version: "v${{ needs.release-please.outputs.version }}"
 
     steps:
       - name: Checkout
@@ -68,7 +69,7 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:${{ matrix.release.version }}
+            ghcr.io/${{ github.repository }}:${{ matrix.release.prefixed_version }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
@@ -93,7 +94,7 @@ jobs:
           cat <<EOF >> release_notes.md
           ## Container Images
 
-          - \`ghcr.io/${{ github.repository }}:${{ matrix.release.version }}\`
+          - \`ghcr.io/${{ github.repository }}:${{ matrix.release.prefixed_version }}\`
 
           ## Helm Charts
 
