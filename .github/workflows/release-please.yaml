@@ -75,9 +75,9 @@ jobs:
 
       - run: |
           # $owner/charts/$repo
-          cat <<EOF | tee -a $GITHUB_ENV
-          CHART_REPO="$GITHUB_REPOSITORY_OWNER/charts"
-          CHART_PATH="$GITHUB_REPOSITORY_OWNER/charts/${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/}"
+          cat <<EOF >> $GITHUB_ENV
+          CHART_REPO=$GITHUB_REPOSITORY_OWNER/charts
+          CHART_PATH=$GITHUB_REPOSITORY_OWNER/charts/${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/}
           EOF
 
       - name: Package and publish chart
