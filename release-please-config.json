@@ -8,12 +8,12 @@
                 {
                     "type": "yaml",
                     "path": "charts/masscan-exporter/Chart.yaml",
-                    "jsonpath": "$.json.version"
+                    "jsonpath": "$.version"
                 },
                 {
                     "type": "yaml",
                     "path": "charts/masscan-exporter/Chart.yaml",
-                    "jsonpath": "$.json.appVersion"
+                    "jsonpath": "$.appVersion"
                 }
             ]
         }
