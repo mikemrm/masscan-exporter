@@ -81,6 +81,30 @@ func (m *Masscan) Run(ctx context.Context) (Report, error) {
 		return Report{}, fmt.Errorf("failed to run command: %w: %s", err, output.String())
 	}
 
+	out := output.String()
+
+	m.logger.Debug().Msgf("command output: %s", out)
+
+	// The last line of output looks like:
+	// rate:  0.00-kpps, 100.00% done, waiting -30-secs, found=0
+	lastUpdateIndex := strings.LastIndex(out, "found=")
+	foundStr := strings.TrimSpace(out[lastUpdateIndex+6:])
+
+	found, err := strconv.Atoi(foundStr)
+	if err != nil {
+		m.logger.Debug().Err(err).Msgf("unable to parse command output for found count: '%s', attempting to read report anyways", foundStr)
+	} else if found == 0 {
+		m.logger.Debug().Msg("no results found")
+
+		return Report{
+			Ranges:  m.cfg.Ranges,
+			Ports:   m.cfg.Ports,
+			MaxRate: m.cfg.MaxRate,
+		}, nil
+	} else {
+		m.logger.Debug().Msgf("command reports %d ports found", found)
+	}
+
 	return m.generateReport(tmpfile)
 }
 
@@ -97,7 +121,9 @@ func (m *Masscan) generateReport(file string) (Report, error) {
 	}
 
 	if err := json.Unmarshal(contents, &report.RawResults); err != nil {
-		return Report{}, err
+		m.logger.Debug().Err(err).Str("report_contents", string(contents)).Msg("failed to decode raw report results")
+
+		return Report{}, fmt.Errorf("failed to decode report results: %w", err)
 	}
 
 	for _, entry := range report.RawResults {
