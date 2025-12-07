@@ -1,0 +1,109 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.names.fullname" $ | quote }}
+  labels: {{- include "common.labels.standard" $ | nindent 8 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{- include "common.labels.matchLabels" (dict "customLabels" .Values.deployment.labels "context" $) | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include "common.utils.checksumTemplate" (dict "path" "/config.yaml" "context" $) | quote }}
+        {{- with .Values.deployment.annotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels: {{- include "common.labels.standard" (dict "customLabels" .Values.deployment.podLabels "context" $) | nindent 8 }}
+    spec:
+      {{- with .Values.deployment.affinity }}
+      affinity: {{- toYaml . | nindent 12 }}
+      {{- end }}
+      {{- with .Values.deployment.podSecurityContext }}
+      securityContext: {{- toYaml . | nindent 12 }}
+      {{- end }}
+      {{- with .Values.deployment.initContainers }}
+      initContainers: {{- toYaml . | nindent 12 }}
+      {{- end }}
+      containers:
+        - name: masscan-exporter
+          image: {{ include "common.images.image" ( dict "imageRoot" (merge .Values.deployment.image (dict "tag" .Chart.AppVersion)) ) | quote }}
+          imagePullPolicy: {{ quote .Values.deployment.image.pullPolicy }}
+          env:
+            {{- if or .Values.config.enabled .Values.config.existingSecretName .Values.config.existingConfigMapName }}
+            - name: MASSCAN_EXPORTER_CONFIG
+              value: /config/config.yaml
+            {{- end }}
+            - name: MASSCAN_EXPORTER_SERVER_LISTEN
+              value: {{ printf ":%v" .Values.service.ports.http.containerPort | quote }}
+            {{- with .Values.deployment.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          envFrom:
+            {{- with .Values.deployment.envFrom }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            {{- range $name, $_ := .Values.service.ports }}
+            - containerPort: {{ .containerPort | default .port }}
+              name: {{ quote $name }}
+              protocol: {{ .protocol | default "TCP" | quote }}
+            {{- end }}
+          {{- if .Values.deployment.resources }}
+          resources: {{- toYaml .Values.deployment.resources | nindent 12 }}
+          {{- end }}
+          {{- with .Values.deployment.securityContext }}
+          securityContext: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if .Values.deployment.livenessProbe.enabled }}
+          livenessProbe: {{- omit .Values.deployment.livenessProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.deployment.readinessProbe.enabled }}
+          readinessProbe: {{- omit .Values.deployment.readinessProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.deployment.startupProbe.enabled }}
+          startupProbe: {{- omit .Values.deployment.startupProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- if or .Values.config.enabled .Values.config.existingSecretName .Values.config.existingConfigMapName }}
+            - name: config
+              mountPath: /config
+              readOnly: true
+            {{- end }}
+            {{- if .Values.deployment.tmpdir.enabled }}
+            - name: tmpdir
+              mountPath: /tmp
+              readOnly: false
+            {{- end }}
+            {{- with .Values.deployment.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        {{- if .Values.config.existingSecretName }}
+        - name: config
+          secret:
+            secretName: {{ quote .Values.config.existingSecretName }}
+            items:
+              - key: {{ quote .Values.config.existingSecretKey }}
+                path: config.yaml
+        {{- else if .Values.config.existingConfigMapName }}
+        - name: config
+          configMap:
+            name: {{ quote .Values.config.existingConfigMapName }}
+            items:
+              - key: {{ quote .Values.config.existingConfigMapKey }}
+                path: config.yaml
+        {{- else if .Values.config.enabled }}
+        - name: config
+          configMap:
+            name: {{ include "common.names.fullname" $ | quote }}
+        {{- end }}
+        {{- if .Values.deployment.tmpdir.enabled }}
+        - name: tmpdir
+          emptyDir:
+            sizeLimit: {{ quote .Values.deployment.tmpdir.sizeLimit }}
+        {{- end }}
+        {{- with .Values.deployment.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}

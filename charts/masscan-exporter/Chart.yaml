@@ -1,0 +1,13 @@
+apiVersion: v2
+name: masscan-exporter
+description: A simple deployment of masscan-exporter.
+type: application
+version: v0.1.0
+# renovate: image=ghcr.io/mikemrm/masscan-exporter
+appVersion: v0.5.1
+sources:
+  - https://github.com/mikemrm/masscan-exporter
+dependencies:
+  - name: common
+    repository: 'oci://registry-1.docker.io/bitnamicharts'
+    version: '2.31.4'

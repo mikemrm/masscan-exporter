@@ -1,0 +1,11 @@
+{{- if and .Values.config.enabled (not (or .Values.config.existingConfigMapName .Values.config.existingSecretName)) }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.names.fullname" $ | quote }}
+  labels: {{- include "common.labels.standard" $ | nindent 8 }}
+data:
+  {{- $config := omit .Values.config "enabled" "existingConfigMapName" "existingConfigMapKey" "existingSecretName" "existingSecretKey" }}
+  config.yaml: | {{- tpl (toYaml $config) $ | nindent 4 }}
+{{- end }}

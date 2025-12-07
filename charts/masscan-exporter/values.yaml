@@ -1,0 +1,178 @@
+---
+nameOverride: ""
+fullnameOverride: ""
+
+config:
+  # provide own config via a secret. (ignores config and configMap)
+  existingSecretName: ""
+  # specify the key inside the secret which holds the config.
+  existingSecretKey: config
+  # provide own config via a config map. (ignores config)
+  existingConfigMapName: ""
+  # specify the key inside the config map which holds the config.
+  existingConfigMapKey: config
+
+  # set to false to not automatically include the config (config is ignored when using existing resources).
+  enabled: true
+
+  loglevel: info
+  collectors: []
+  # - name: collector-name          # required
+  #   schedule: '30 */5 * * * * *'  # required
+  #   scan_on_start: false          # scans on start
+  #   start_delay: 0s               # delays scan on start
+  #   timeout: 0s                   # sets a timeout for a scan (default: disabled)
+  #   masscan:                      # masscan config
+  #     temp_dir: /tmp              # temp directory for masscan runs
+  #     bin_path: /usr/bin/masscan  # path to masscan
+  #     wait_delay: 20s             # delay to wait for command to exit when cancelled
+  #     max_rate: 100               # masscan scan rate
+  #     ranges: []                  # ip ranges (overrides config ranges)
+  #     ports: []                   # port ranges (overrides config ports)
+  #     config_path: ""             # path to an existing masscan config (overrides config option)
+  #     config: ""                  # provide a masscan config as a string
+  server:
+    ## configured with service.ports.http.containerPort
+    # listen: :9187 # default: :9187
+
+    # The number of times a collector can fail before /readyz will report unhealthy.
+    # default is 5, set to 0 to disable.
+    unhealthy_failed_scrapes: 5
+
+deployment:
+  image:
+    registry: ghcr.io
+    repository: mikemrm/masscan-exporter
+    tag: ""
+    digest: ""
+    pullPolicy: IfNotPresent
+
+  labels: {}
+  annotations: {}
+
+  initContainers: []
+
+  env: []
+  envFrom: []
+  shmSize: 0
+
+  securityContext:
+    readOnlyRootFilesystem: true
+    ## The following may be necessary
+    # privileged: true
+    # runAsNonRoot: false
+    # runAsUser: 0
+    # runAsGroup: 0
+
+  podLabels: {}
+  podSecurityContext: {}
+
+  resources: {}
+
+  volumeMounts: []
+  volumes: []
+
+  tmpdir:
+    enabled: true
+    sizeLimit: 1Mi
+
+  livenessProbe:
+    enabled: true
+    httpGet:
+      port: http
+      path: /livez
+
+  readinessProbe:
+    enabled: true
+    httpGet:
+      port: http
+      path: /readyz
+
+  startupProbe:
+    enabled: false
+
+service:
+  enabled: true
+  ports:
+    http:
+      port: 80
+      containerPort: 9187
+      protocol: TCP
+
+serviceMonitor:
+  enabled: false
+
+prometheusRules:
+  enabled: false
+
+  # collectorRules creates specific rules for each collector.
+  # portRules must be enabled.
+  collectorRules: {}
+    # collector0:
+    #   # permit if specified will create a rule which will alert if any port is open which is not specified.
+    #   permit:
+    #     - 80/tcp   # suffix with /tcp or /udp to limit the protocol.
+    #     - 443/tcp
+    #     - 123      # if no suffix is provided, it matches both.
+    #   # deny if specified will create a rule which will alert if any port is open which is specified.
+    #   deny:
+    #     - 22
+
+  # rules are the prometheus rules that are created.
+  # rule fields are templated.
+  rules:
+    enabled: true
+    MasscanScrapeUnsuccessful:
+      enabled: true
+      annotations:
+        summary: Masscan scrape was unsuccessful for job {{ `{{$labels.job}}` }} on {{ `{{$labels.pod}}` }}.
+        description: Masscan scrape was unsuccessful for job {{ `{{$labels.job}}` }} on {{ `{{$labels.pod}}` }}.
+      expr: masscan_scrape_collector_success == 0
+      for: 2h
+      labels:
+        severity: warning
+
+  # portRules are the permit/deny rules used for each collector defined in collectorRules.
+  # rule fields are templated with the following context:
+  #   - `context` contains the root helm context.
+  #   - `collector` is the name of the collector being processed.
+  #   - `permit` contains a map of tcp/udp ports specififed. (ex: {"tcp": ["123"], "udp": ["456"]})
+  #   - `deny` contains a map of tcp/udp ports specififed. (ex: {"tcp": ["123"], "udp": ["456"]})
+  portRules:
+    enabled: true
+    permitTCP:
+      alert: MasscanCollectorTCPPortOpen
+      annotations:
+        summary: Masscan collector {{ `{{$labels.collector}}` }} has unexpected TCP port {{ `{{$labels.port}}` }} open.
+        description: Masscan collector {{ `{{$labels.collector}}` }} has unexpected TCP port {{ `{{$labels.port}}` }} open.
+      expr: masscan_ports_open{collector="{{ .collector }}", proto="tcp", port!~"{{ join "|" .permit.tcp }}"} == 1
+      for: 10m
+      labels:
+        severity: warning
+    permitUDP:
+      alert: MasscanCollectorUDPPortOpen
+      annotations:
+        summary: Masscan collector {{ `{{$labels.collector}}` }} has unexpected UDP port {{ `{{$labels.port}}` }} open.
+        description: Masscan collector {{ `{{$labels.collector}}` }} has unexpected UDP port {{ `{{$labels.port}}` }} open.
+      expr: masscan_ports_open{collector="{{ .collector }}", proto="udp", port!~"{{ join "|" .permit.udp }}"} == 1
+      for: 10m
+      labels:
+        severity: warning
+    denyTCP:
+      alert: MasscanCollectorTCPPortOpen
+      annotations:
+        summary: Masscan collector {{ `{{$labels.collector}}` }} has unexpected TCP port {{ `{{$labels.port}}` }} open.
+        description: Masscan collector {{ `{{$labels.collector}}` }} has unexpected TCP port {{ `{{$labels.port}}` }} open.
+      expr: masscan_ports_open{collector="{{ .collector }}", proto="tcp", port=~"{{ join "|" .deny.tcp }}"} == 1
+      for: 10m
+      labels:
+        severity: warning
+    denyUDP:
+      alert: MasscanCollectorUDPPortOpen
+      annotations:
+        summary: Masscan collector {{ `{{$labels.collector}}` }} has unexpected UDP port {{ `{{$labels.port}}` }} open.
+        description: Masscan collector {{ `{{$labels.collector}}` }} has unexpected UDP port {{ `{{$labels.port}}` }} open.
+      expr: masscan_ports_open{collector="{{ .collector }}", proto="udp", port=~"{{ join "|" .deny.udp }}"} == 1
+      for: 10m
+      labels:
+        severity: warning
