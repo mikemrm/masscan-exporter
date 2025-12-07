@@ -12,6 +12,9 @@ Import the grafana dashboard with id `23344`.
 
 ```
 $ curl localhost:9187/metrics
+# HELP masscan_collectors_total Reports the number of configured collectors.
+# TYPE masscan_collectors_total gauge
+masscan_collectors_total 2
 # HELP masscan_ports_open Masscan port status report
 # TYPE masscan_ports_open gauge
 masscan_ports_open{collector="network0",ip="10.0.0.1",port="179",proto="tcp",reason="syn-ack"} 1
@@ -36,6 +39,10 @@ masscan_scrape_collector_success{collector="network1"} 1
 # TYPE masscan_scrape_in_progress gauge
 masscan_scrape_in_progress{collector="network0"} 0
 masscan_scrape_in_progress{collector="network1"} 0
+# HELP masscan_scrape_next_start_time Reports the start time for the next scrape.
+# TYPE masscan_scrape_next_start_time gauge
+masscan_scrape_next_start_time{collector="network0"} 1.7456961000000699e+09
+masscan_scrape_next_start_time{collector="network1"} 1.7456961300006979e+09
 # HELP masscan_scrape_seconds Reports how long a scrape took in seconds.
 # TYPE masscan_scrape_seconds gauge
 masscan_scrape_seconds{collector="network0"} 67.674926113
@@ -44,6 +51,16 @@ masscan_scrape_seconds{collector="network1"} 66.65523849
 # TYPE masscan_scrape_start_time counter
 masscan_scrape_start_time{collector="network0"} 1.7456958000000699e+09
 masscan_scrape_start_time{collector="network1"} 1.7456958300006979e+09
+# HELP masscan_scrapes_failed_current The number of consecutive scrapes which have failed.
+# TYPE masscan_scrapes_failed_current gauge
+masscan_scrapes_failed_current{collector="network0"} 0
+masscan_scrapes_failed_current{collector="network1"} 0
+# HELP masscan_scrapes_total Total number of scrapes executed for the collector.
+# TYPE masscan_scrapes_total counter
+masscan_scrapes_total{collector="network0",result="failed"} 0
+masscan_scrapes_total{collector="network0",result="success"} 3
+masscan_scrapes_total{collector="network1",result="failed"} 0
+masscan_scrapes_total{collector="network1",result="success"} 3
 ```
 
 ### Example Config:
@@ -88,4 +105,7 @@ collectors:
 #     config: ""                  # provide a masscan config as a string
 server:
   listen: :9090 # default: :9090
+  # The number of times a collector can fail before /readyz will report unhealthy.
+  # default is 5, set to 0 to disable.
+  unhealthy_failed_scrapes: 5
 ```
