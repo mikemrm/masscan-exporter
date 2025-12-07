@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.6.0](https://github.com/mikemrm/masscan-exporter/compare/v0.5.1...v0.6.0) (2025-12-07)
+
+
+### Features
+
+* add health metrics and endpoints ([#21](https://github.com/mikemrm/masscan-exporter/issues/21)) ([172fef8](https://github.com/mikemrm/masscan-exporter/commit/172fef850a4b91b064d65d4252443bfef935a0c2))
+* add helm chart ([#22](https://github.com/mikemrm/masscan-exporter/issues/22)) ([081e898](https://github.com/mikemrm/masscan-exporter/commit/081e89816779b0f390a33bd75b479f777fe2e501))
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/adhocore/gronx to v1.19.6 ([#9](https://github.com/mikemrm/masscan-exporter/issues/9)) ([827e265](https://github.com/mikemrm/masscan-exporter/commit/827e2653a7afab101f723272db36bf184a821570))
+* **deps:** update module github.com/prometheus/client_golang to v1.23.2 ([#11](https://github.com/mikemrm/masscan-exporter/issues/11)) ([db3e9b0](https://github.com/mikemrm/masscan-exporter/commit/db3e9b06c47d78884a506fdef7cdc72b6318f911))
+* **deps:** update module github.com/spf13/cobra to v1.10.2 ([#14](https://github.com/mikemrm/masscan-exporter/issues/14)) ([caab0e5](https://github.com/mikemrm/masscan-exporter/commit/caab0e50c5c2ecdb18c32b7ec9746849d8172af6))
+* **deps:** update module github.com/spf13/viper to v1.21.0 ([#16](https://github.com/mikemrm/masscan-exporter/issues/16)) ([f25f815](https://github.com/mikemrm/masscan-exporter/commit/f25f81569e6e253276eff3f14516454da09e5fdb))
+* gracefully handle no ports found ([#20](https://github.com/mikemrm/masscan-exporter/issues/20)) ([fcfd365](https://github.com/mikemrm/masscan-exporter/commit/fcfd365570cf9533456c9e8373608b685d3cfcb8))
+
 ## [0.5.1](https://github.com/mikemrm/masscan-exporter/compare/v0.5.0...v0.5.1) (2025-04-26)
 
 
