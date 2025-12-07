@@ -80,6 +80,10 @@ type textUnmarshaller interface {
 
 func decodeUnmarshalText(config *mapstructure.DecoderConfig) {
 	hook := func(from, to reflect.Value) (any, error) {
+		if !reflect.Indirect(to).CanAddr() {
+			return from.Interface(), nil
+		}
+
 		toI, ok := reflect.Indirect(to).Addr().Interface().(textUnmarshaller)
 		if !ok {
 			return from.Interface(), nil
