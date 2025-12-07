@@ -1,6 +1,7 @@
 FROM debian:13-slim AS build
 
 ARG MASSCAN_REPO=https://github.com/robertdavidgraham/masscan
+# renovate: datasource=github-releases depName=masscan packageName=robertdavidgraham/masscan
 ARG MASSCAN_VERSION=1.3.2
 
 RUN apt update \
