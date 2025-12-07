@@ -75,7 +75,7 @@ jobs:
 
       - run: |
           # $owner/charts/$repo
-          cat <<EOF >> $GITHUB_ENV
+          cat <<EOF | tee -a $GITHUB_ENV
           PACKAGE_REPO="$GITHUB_REPOSITORY_OWNER/charts/${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/}"
           EOF
 
