@@ -2,9 +2,9 @@ apiVersion: v2
 name: masscan-exporter
 description: A simple deployment of masscan-exporter.
 type: application
-version: 0.6.0 # x-release-please-version
+version: 0.6.1 # x-release-please-version
 # renovate: image=ghcr.io/mikemrm/masscan-exporter
-appVersion: v0.6.0 # x-release-please-version
+appVersion: v0.6.1 # x-release-please-version
 sources:
   - https://github.com/mikemrm/masscan-exporter
 dependencies:
