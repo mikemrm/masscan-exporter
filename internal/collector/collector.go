@@ -24,12 +24,20 @@ type Collector struct {
 
 	mu sync.RWMutex
 
-	collecting bool
-	start      time.Time
-	cache      []prometheus.Metric
-	nextCache  []prometheus.Metric
+	collecting    bool
+	totalSuccess  int
+	totalFailures int
+	failedScrapes int
+	start         time.Time
+	cache         []prometheus.Metric
+	nextScrape    time.Time
+	nextCache     []prometheus.Metric
 
 	doneCh chan struct{}
+}
+
+func (c *Collector) Name() string {
+	return c.name
 }
 
 func (c *Collector) run() error {
@@ -53,6 +61,12 @@ func (c *Collector) run() error {
 			}
 		}
 
+		c.mu.Lock()
+
+		c.nextScrape = nextTick
+
+		c.mu.Unlock()
+
 		logger.Info().
 			Msgf("First scan at %s (%s)", nextTick.Format(time.RFC3339), time.Until(nextTick))
 
@@ -71,6 +85,7 @@ func (c *Collector) run() error {
 					break
 				}
 
+				// This shouldn't happen as we already validated the schedule when we first started the run.
 				logger.Err(err).Msg("Error calculating next tick")
 
 				select {
@@ -81,6 +96,12 @@ func (c *Collector) run() error {
 			}
 
 			logger.Debug().Msgf("Next scan scheduled for %s (%s)", nextTick.Format(time.RFC3339), time.Until(nextTick))
+
+			c.mu.Lock()
+
+			c.nextScrape = nextTick
+
+			c.mu.Unlock()
 		}
 	}()
 
@@ -95,27 +116,42 @@ func (c *Collector) refresh() {
 	c.mu.Lock()
 
 	c.collecting = true
+	totalSuccess := c.totalSuccess
+	totalFailures := c.totalFailures
+	failedScrapes := c.failedScrapes
 
 	c.mu.Unlock()
 
 	start := time.Now()
 
-	defer func() {
-		c.mu.Lock()
-		defer c.mu.Unlock()
-
-		c.collecting = false
-		c.start = start
-		c.cache = c.nextCache
-		c.nextCache = nil
-	}()
-
 	result := c.doCollection()
 	duration := time.Since(start)
+
+	if result == 0 {
+		totalFailures++
+		failedScrapes++
+	} else {
+		totalSuccess++
+		failedScrapes = 0
+	}
 
 	c.addMetric(descScrapeSuccess, prometheus.GaugeValue, result, c.name)
 	c.addMetric(descScrapeStart, prometheus.CounterValue, float64(start.UnixNano())/float64(time.Second), c.name)
 	c.addMetric(descScrapeSeconds, prometheus.GaugeValue, float64(duration)/float64(time.Second), c.name)
+	c.addMetric(descScrapesTotal, prometheus.CounterValue, float64(totalSuccess), c.name, "success")
+	c.addMetric(descScrapesTotal, prometheus.CounterValue, float64(totalFailures), c.name, "failed")
+	c.addMetric(descScrapesFailed, prometheus.GaugeValue, float64(failedScrapes), c.name)
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.collecting = false
+	c.totalSuccess = totalSuccess
+	c.totalFailures = totalFailures
+	c.failedScrapes = failedScrapes
+	c.start = start
+	c.cache = c.nextCache
+	c.nextCache = nil
 }
 
 func (c *Collector) Collect(ch chan<- prometheus.Metric) {
@@ -134,6 +170,13 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 
 	if metric := c.buildMetric(descScrapeInProgress, prometheus.GaugeValue, inProgress, c.name); metric != nil {
 		ch <- metric
+	}
+
+	if !c.nextScrape.IsZero() {
+		nextScrape := float64(c.nextScrape.UnixNano()) / float64(time.Second)
+		if metric := c.buildMetric(descScrapeNextStart, prometheus.GaugeValue, nextScrape, c.name); metric != nil {
+			ch <- metric
+		}
 	}
 }
 
@@ -199,6 +242,13 @@ func (c *Collector) addMetric(desc *prometheus.Desc, valueType prometheus.ValueT
 	}
 
 	c.nextCache = append(c.nextCache, metric)
+}
+
+func (c *Collector) FailedScrapes() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	return c.failedScrapes
 }
 
 func NewCollector(ctx context.Context, opts ...Option) (*Collector, error) {

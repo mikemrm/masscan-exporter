@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"net/http"
 	"time"
 
@@ -26,6 +27,10 @@ func runExporter(cmd *cobra.Command, _ []string) {
 	registry := prometheus.NewRegistry()
 
 	cfg.Exporter.Registerer = registry
+
+	if len(cfg.Collectors) == 0 {
+		collectorLogger.Warn().Msg("no collectors configured")
+	}
 
 	for _, colCfg := range cfg.Collectors {
 		collector, err := collector.NewCollector(ctx, collector.WithConfig(colCfg))
@@ -54,6 +59,40 @@ func runExporter(cmd *cobra.Command, _ []string) {
 		promhttp.HandlerFor(registry, promhttp.HandlerOpts{}).ServeHTTP(w, r)
 
 		serverLogger.Info().Msgf("request completed in %s", time.Since(s))
+	}))
+
+	mux.Handle("/livez", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
+
+	mux.Handle("/readyz", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		healthy := true
+
+		var out bytes.Buffer
+
+		if len(cfg.Collectors) != 0 {
+			out.WriteString("[+]config ok\n")
+		} else {
+			healthy = false
+
+			out.WriteString("[-]config not ok\n")
+		}
+
+		if *cfg.Server.UnhealthyFailedScrapes > 0 {
+			for _, collector := range cfg.Exporter.Collectors {
+				if collector.FailedScrapes() < *cfg.Server.UnhealthyFailedScrapes {
+					out.WriteString("[+]collector/" + collector.Name() + " ok\n")
+				} else {
+					healthy = false
+
+					out.WriteString("[-]collector/" + collector.Name() + " not ok\n")
+				}
+			}
+		}
+
+		if !healthy {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		w.Write(out.Bytes())
 	}))
 
 	serverLogger.Info().Msgf("Listening on %s", cfg.Server.Listen)

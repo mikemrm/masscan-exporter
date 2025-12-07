@@ -14,6 +14,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	defaultUnhealthyFailedScrapes = 5
+)
+
 type ctxConfigKey struct{}
 
 var configKey = ctxConfigKey{}
@@ -23,7 +27,8 @@ type config struct {
 	Collectors []collector.Config `mapstructure:"collectors"`
 	Exporter   exporter.Config    `mapstructure:"exporter"`
 	Server     struct {
-		Listen string `mapstructure:"listen"`
+		Listen                 string `mapstructure:"listen"`
+		UnhealthyFailedScrapes *int   `mapstructure:"unhealthy_failed_scrapes"`
 	} `mapstructure:"server"`
 }
 
@@ -32,7 +37,7 @@ func getConfig(ctx context.Context) config {
 }
 
 func initialize(cmd *cobra.Command, _ []string) {
-	logger := zerolog.New(os.Stderr)
+	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
 
 	v := viper.GetViper()
 
@@ -56,6 +61,10 @@ func initialize(cmd *cobra.Command, _ []string) {
 
 	if err := v.Unmarshal(&cfg, decodeUnmarshalText); err != nil {
 		logger.Fatal().Err(err).Msg("failed to build config")
+	}
+
+	if cfg.Server.UnhealthyFailedScrapes == nil {
+		cfg.Server.UnhealthyFailedScrapes = ptr(defaultUnhealthyFailedScrapes)
 	}
 
 	ctx := context.WithValue(cmd.Context(), configKey, cfg)
@@ -93,6 +102,10 @@ func decodeUnmarshalText(config *mapstructure.DecoderConfig) {
 	} else {
 		config.DecodeHook = hook
 	}
+}
+
+func ptr[T any](v T) *T {
+	return &v
 }
 
 func init() {
