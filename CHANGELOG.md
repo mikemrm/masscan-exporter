@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.4](https://github.com/mikemrm/masscan-exporter/compare/v0.6.3...v0.6.4) (2025-12-07)
+
+
+### Bug Fixes
+
+* panic when unhealthy_failed_scrapes is configured ([44d18a9](https://github.com/mikemrm/masscan-exporter/commit/44d18a96b519e91007cc9f222509dedf3a9f896e))
+
 ## [0.6.3](https://github.com/mikemrm/masscan-exporter/compare/v0.6.2...v0.6.3) (2025-12-07)
 
 
