@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/mikemrm/masscan-exporter/compare/v0.7.0...v0.7.1) (2025-12-14)
+
+
+### Bug Fixes
+
+* **release:** upload binaries ([d76723a](https://github.com/mikemrm/masscan-exporter/commit/d76723ad879b0040593550d38cb455d8daa7fdf1))
+
 ## [0.7.0](https://github.com/mikemrm/masscan-exporter/compare/v0.6.4...v0.7.0) (2025-12-14)
 
 
