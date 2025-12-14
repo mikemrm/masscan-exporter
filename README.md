@@ -109,3 +109,23 @@ server:
   # default is 5, set to 0 to disable.
   unhealthy_failed_scrapes: 5
 ```
+
+## Development
+
+In addition to [`go`], some `make` commands use [`docker`] and [`jq`].
+
+```shell
+$ make help
+help    Show this help.
+all     Tests and builds the binary and container images.
+test    Runs go tests
+build   Builds a binary for the current os/arch.
+image   Builds all container images.
+```
+
+***note**: `make image` builds containers for all platforms.
+Ensure your buildx environment is configured to support amd64 and arm64 platforms.*
+
+[`go`]: https://go.dev
+[`docker`]: https://docker.com
+[`jq`]: https://jqlang.org
