@@ -14,6 +14,11 @@ builds:
       - amd64
       - arm64
 
+archives:
+  - formats:
+      - binary
+    name_template: '{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}'
+
 dockers_v2:
   - images:
       - 'ghcr.io/{{ .Env.GITHUB_REPOSITORY }}'
