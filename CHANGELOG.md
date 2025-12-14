@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/mikemrm/masscan-exporter/compare/v0.6.4...v0.7.0) (2025-12-14)
+
+
+### Features
+
+* **release:** build multi-arch images ([#28](https://github.com/mikemrm/masscan-exporter/issues/28)) ([97cf6a4](https://github.com/mikemrm/masscan-exporter/commit/97cf6a466755ceddac4978b9250e60c93ba0ca0d))
+
 ## [0.6.4](https://github.com/mikemrm/masscan-exporter/compare/v0.6.3...v0.6.4) (2025-12-07)
 
 
