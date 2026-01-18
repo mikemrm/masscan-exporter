@@ -199,7 +199,7 @@ func (c *Collector) doCollection() float64 {
 		defer cancel()
 	}
 
-	report, err := c.masscan.Run(ctx)
+	report, err := c.masscan.Run(c.logger.WithContext(ctx))
 	if err != nil {
 		c.logger.Err(err).Msg("failed to execute masscan")
 

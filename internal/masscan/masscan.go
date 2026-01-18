@@ -21,11 +21,12 @@ var (
 )
 
 type Masscan struct {
-	logger zerolog.Logger
-	cfg    Config
+	cfg Config
 }
 
 func (m *Masscan) Run(ctx context.Context) (Report, error) {
+	logger := zerolog.Ctx(ctx)
+
 	tmpfile, cleanup, err := tempFile(m.cfg.TempDir, "json")
 	if err != nil {
 		return Report{}, err
@@ -44,7 +45,12 @@ func (m *Masscan) Run(ctx context.Context) (Report, error) {
 
 	if m.cfg.ConfigPath != "" {
 		args = append(args, "-c", m.cfg.ConfigPath)
-	} else if m.cfg.Config != "" {
+	} else if m.cfg.Config.Configured() {
+		config, err := m.cfg.Config.GetValue(ctx)
+		if err != nil {
+			return Report{}, fmt.Errorf("failed to get masscan config: %w", err)
+		}
+
 		conffile, cleanup, err := tempFile(m.cfg.TempDir, "conf")
 		if err != nil {
 			return Report{}, err
@@ -52,22 +58,41 @@ func (m *Masscan) Run(ctx context.Context) (Report, error) {
 
 		defer cleanup()
 
-		if err := os.WriteFile(conffile, []byte(m.cfg.Config), 0x644); err != nil {
+		if err := os.WriteFile(conffile, []byte(config), 0644); err != nil {
 			return Report{}, fmt.Errorf("failed to write config: %w", err)
 		}
 
 		args = append(args, "-c", conffile)
 	}
 
-	args = append(args, m.cfg.Ranges...)
-
-	if len(m.cfg.Ports) != 0 {
-		ports := strings.Join(m.cfg.Ports, ",")
-
-		args = append(args, "-p"+ports)
+	report := Report{
+		Partial: true,
+		MaxRate: m.cfg.MaxRate,
 	}
 
-	m.logger.Debug().Msgf("prepared command %s %q", m.cfg.BinPath, args)
+	if m.cfg.Ranges.Configured() {
+		ranges, err := m.cfg.Ranges.GetValue(ctx)
+		if err != nil {
+			return report, fmt.Errorf("failed to get ranges: %w", err)
+		}
+
+		report.Ranges = ranges
+
+		args = append(args, ranges...)
+	}
+
+	if m.cfg.Ports.Configured() {
+		ports, err := m.cfg.Ports.GetValue(ctx)
+		if err != nil {
+			return report, fmt.Errorf("failed to get ports: %w", err)
+		}
+
+		report.Ports = ports
+
+		args = append(args, "-p"+strings.Join(ports, ","))
+	}
+
+	logger.Debug().Msgf("prepared command %s %q", m.cfg.BinPath, args)
 
 	var output bytes.Buffer
 
@@ -78,12 +103,12 @@ func (m *Masscan) Run(ctx context.Context) (Report, error) {
 	cmd.Stderr = &output
 
 	if err := cmd.Run(); err != nil {
-		return Report{}, fmt.Errorf("failed to run command: %w: %s", err, output.String())
+		return report, fmt.Errorf("failed to run command: %w: %s", err, output.String())
 	}
 
 	out := output.String()
 
-	m.logger.Debug().Msgf("command output: %s", out)
+	logger.Debug().Msgf("command output: %s", out)
 
 	// The last line of output looks like:
 	// rate:  0.00-kpps, 100.00% done, waiting -30-secs, found=0
@@ -92,38 +117,30 @@ func (m *Masscan) Run(ctx context.Context) (Report, error) {
 
 	found, err := strconv.Atoi(foundStr)
 	if err != nil {
-		m.logger.Debug().Err(err).Msgf("unable to parse command output for found count: '%s', attempting to read report anyways", foundStr)
+		logger.Debug().Err(err).Msgf("unable to parse command output for found count: '%s', attempting to read report anyways", foundStr)
 	} else if found == 0 {
-		m.logger.Debug().Msg("no results found")
+		logger.Debug().Msg("no results found")
 
-		return Report{
-			Ranges:  m.cfg.Ranges,
-			Ports:   m.cfg.Ports,
-			MaxRate: m.cfg.MaxRate,
-		}, nil
+		return report, nil
 	} else {
-		m.logger.Debug().Msgf("command reports %d ports found", found)
+		logger.Debug().Msgf("command reports %d ports found", found)
 	}
 
-	return m.generateReport(tmpfile)
+	return m.generateReport(ctx, tmpfile, report)
 }
 
-func (m *Masscan) generateReport(file string) (Report, error) {
+func (m *Masscan) generateReport(ctx context.Context, file string, report Report) (Report, error) {
+	logger := zerolog.Ctx(ctx)
+
 	contents, err := os.ReadFile(file)
 	if err != nil {
-		return Report{}, err
-	}
-
-	report := Report{
-		Ranges:  m.cfg.Ranges,
-		Ports:   m.cfg.Ports,
-		MaxRate: m.cfg.MaxRate,
+		return report, err
 	}
 
 	if err := json.Unmarshal(contents, &report.RawResults); err != nil {
-		m.logger.Debug().Err(err).Str("report_contents", string(contents)).Msg("failed to decode raw report results")
+		logger.Debug().Err(err).Str("report_contents", string(contents)).Msg("failed to decode raw report results")
 
-		return Report{}, fmt.Errorf("failed to decode report results: %w", err)
+		return report, fmt.Errorf("failed to decode report results: %w", err)
 	}
 
 	for _, entry := range report.RawResults {
@@ -148,11 +165,13 @@ func (m *Masscan) generateReport(file string) (Report, error) {
 		}
 	}
 
+	report.Partial = false
+
 	return report, nil
 }
 
 func tempFile(dir string, ext string) (string, func(), error) {
-	if err := os.MkdirAll(dir, 0x755); err != nil {
+	if err := os.MkdirAll(dir, 0755); err != nil {
 		return "", nil, err
 	}
 
@@ -178,13 +197,10 @@ func tempFile(dir string, ext string) (string, func(), error) {
 	return "", nil, fmt.Errorf("%w: %w", ErrTempfileExhausted, err)
 }
 
-func New(ctx context.Context, opts ...Option) (*Masscan, error) {
+func New(_ context.Context, opts ...Option) (*Masscan, error) {
 	cfg := newConfig(opts...)
 
-	logger := zerolog.Ctx(ctx).With().Str("component", "masscan").Logger()
-
 	return &Masscan{
-		logger: logger,
-		cfg:    cfg,
+		cfg: cfg,
 	}, nil
 }

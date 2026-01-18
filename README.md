@@ -71,7 +71,6 @@ collectors:
   - name: network0
     schedule: '*/5 * * * *'
     masscan:
-      max_rate: 500
       ranges:
         - 10.0.0.0/24
       ports:
@@ -89,6 +88,18 @@ collectors:
         - 10.1.0.0/24
       config: |
         ports = 80,443,100-200
+  - name: network3
+    schedule: '@hourly'
+    scan_on_start: true
+    start_delay: 10s
+    timeout: 10m
+    masscan:
+      ranges:
+        url: https://net.example.com/ranges?zone=external
+        url_config:
+          auth:
+            bearer: file:///run/secrets/net-token
+      ports: https://net.example.com/ports
 # - name: collector-name          # required
 #   schedule: '30 */5 * * * * *'  # required
 #   scan_on_start: false          # scans on start
@@ -99,16 +110,76 @@ collectors:
 #     bin_path: /usr/bin/masscan  # path to masscan
 #     wait_delay: 20s             # delay to wait for command to exit when cancelled
 #     max_rate: 100               # masscan scan rate
-#     ranges: []                  # ip ranges (overrides config ranges)
-#     ports: []                   # port ranges (overrides config ports)
+#     ranges: []                  # ip ranges (overrides config ranges) (dynamic value, see below)
+#     ports: []                   # port ranges (overrides config ports) (dynamic value, see below)
 #     config_path: ""             # path to an existing masscan config (overrides config option)
-#     config: ""                  # provide a masscan config as a string
+#     config: ""                  # provide a masscan config as a string (overrides config_source) (dynamic value, see below)
 server:
   listen: :9187 # default: :9187
   # The number of times a collector can fail before /readyz will report unhealthy.
   # default is 5, set to 0 to disable.
   unhealthy_failed_scrapes: 5
 ```
+
+### Dynamic Value Configuration
+
+Dynamic fields support a number of configuration methods.
+
+1. You may statically set the raw value, for example:
+   ```yaml
+   ranges: [10.1.0.0/24, 10.2.0.0/24]
+   config: |
+     ports = 80,443
+   ```
+2. Dynamically using the env/file/http(s) prefixes, for example:
+   ```yaml
+   ranges: https://net.example.com/ranges
+   ports: file:///data/ports
+   config: env://MASSCAN_CONFIG
+   ```
+3. Or define the whole dynamic config directly.
+   ```yaml
+   ranges:
+     url: https://net.example.com
+     url_config:
+       auth:
+         bearer: file:///path/to/token
+   ports:
+     file: /data/ports
+   config:
+     env: MASSCAN_CONFIG
+   ```
+
+For fields which are a list of values, values may be in the form of JSON, comma separated or newline separate responses.
+The following examples all provide the same results.
+
+- `["10.1.0.0/24", "10.2.0.0/24"]`
+- `10.1.0.0/24,10.2.0.0/24`
+- ```
+  10.1.0.0/24
+  10.2.0.0/24
+  ```
+
+See below for all available dynamic configuration options:
+
+```yaml
+field_name:
+  value: ...       # static value
+  env: ""          # environment variable to source value from
+  file: ""         # direct file path to source
+  url: ""          # remote file path (http/https). If no scheme is provided, https is assumed.
+  url_config:
+    method: ""     # http method (default: GET)
+    auth:
+      username: "" # provide basic auth username
+      password: "" # provide basic auth password
+      bearer: ""   # provide a bearer token (overrides basic auth if not empty)
+    headers: {}    # string key/value headers
+    body: ""       # body contents to send with non GET requests.
+```
+
+All string values may be prefixed with either `env://` or `file://` to source the value from environment variables or a file.
+These values are loaded on each masscan run, so a value may be changed on the fly.
 
 ## Development
 

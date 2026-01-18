@@ -7,6 +7,7 @@ type Report struct {
 
 	Results    map[string]Results `json:"results"`
 	RawResults RawResults         `json:"raw_results"`
+	Partial    bool               `json:"partial"`
 }
 
 type Results struct {
