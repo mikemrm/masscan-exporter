@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.8.0](https://github.com/mikemrm/masscan-exporter/compare/v0.7.0...v0.8.0) (2026-01-18)
+
+
+### Features
+
+* add support for dynamically sourced config ([#34](https://github.com/mikemrm/masscan-exporter/issues/34)) ([469da1e](https://github.com/mikemrm/masscan-exporter/commit/469da1ec40b21d5facf5eb23fb7a7027b01b123c)), closes [#32](https://github.com/mikemrm/masscan-exporter/issues/32)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/go-viper/mapstructure/v2 to v2.5.0 ([#33](https://github.com/mikemrm/masscan-exporter/issues/33)) ([40acc8a](https://github.com/mikemrm/masscan-exporter/commit/40acc8a0fa54a73b5b2220dfccd2c54f5d397685))
+* **release:** upload binaries ([d76723a](https://github.com/mikemrm/masscan-exporter/commit/d76723ad879b0040593550d38cb455d8daa7fdf1))
+
 ## [0.7.0](https://github.com/mikemrm/masscan-exporter/compare/v0.6.4...v0.7.0) (2025-12-14)
 
 
