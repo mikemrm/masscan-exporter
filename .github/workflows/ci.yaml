@@ -50,7 +50,7 @@ jobs:
 
       - name: Set up QEMU
         if: steps.changed-files.outputs.docker_any_changed == 'true' || github.ref_name == 'main' || github.event.pull_request.head.ref == 'release-please--branches--main'
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
         if: steps.changed-files.outputs.docker_any_changed == 'true' || github.ref_name == 'main' || github.event.pull_request.head.ref == 'release-please--branches--main'
