@@ -54,7 +54,7 @@ jobs:
 
       - name: Set up Docker Buildx
         if: steps.changed-files.outputs.docker_any_changed == 'true' || github.ref_name == 'main' || github.event.pull_request.head.ref == 'release-please--branches--main'
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build container
         if: steps.changed-files.outputs.docker_any_changed == 'true' || github.ref_name == 'main' || github.event.pull_request.head.ref == 'release-please--branches--main'
