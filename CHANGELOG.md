@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.8.1](https://github.com/mikemrm/masscan-exporter/compare/v0.8.0...v0.8.1) (2026-09-05)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/adhocore/gronx to v1.20.3 ([#52](https://github.com/mikemrm/masscan-exporter/issues/52)) ([d1e45fd](https://github.com/mikemrm/masscan-exporter/commit/d1e45fdd3767e366ccbe7a124d324b1fdc6cf0c4))
+* **deps:** update module github.com/prometheus/client_golang to v1.24.1 ([#51](https://github.com/mikemrm/masscan-exporter/issues/51)) ([dbe866f](https://github.com/mikemrm/masscan-exporter/commit/dbe866fd4d9a631603774c1201c1353feff676f3))
+* **deps:** update module github.com/rs/zerolog to v1.35.1 ([#54](https://github.com/mikemrm/masscan-exporter/issues/54)) ([b065ae7](https://github.com/mikemrm/masscan-exporter/commit/b065ae7c7b900371c7b03d909a362b35e68139b0))
+* **deps:** update module github.com/stretchr/testify to v1.12.1 ([#55](https://github.com/mikemrm/masscan-exporter/issues/55)) ([693cf6b](https://github.com/mikemrm/masscan-exporter/commit/693cf6bbbafb7b2b0477200e24fb0ddc514e3c12))
+
 ## [0.8.0](https://github.com/mikemrm/masscan-exporter/compare/v0.7.0...v0.8.0) (2026-01-18)
 
 
