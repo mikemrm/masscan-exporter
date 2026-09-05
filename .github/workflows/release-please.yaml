@@ -61,7 +61,7 @@ jobs:
           echo '${{ secrets.GITHUB_TOKEN }}' | helm registry login ghcr.io --username '${{ github.actor }}' --password-stdin
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: 'go.mod'
 
